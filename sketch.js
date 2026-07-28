@@ -1,0 +1,1897 @@
+// Pause System
+let paused = false;
+let pauseButton = {
+  x: 0,
+  y: 15,
+  w: 60,
+  h: 45,
+};
+// ================= SHOP =================
+let shopOpen = false;
+
+let shopButton = {
+  x: 20,
+  y: 0,
+  w: 180,
+  h: 50,
+};
+
+// Music & Sound Effects
+let bearGrowlSound;
+let buttonClickSound;
+let birdSquawkSound;
+let hiveDamageSound;
+let beesBuzzingSound;
+let turretShotSound;
+let purchaseSound;
+let declineSound;
+let achievementSound;
+let backgroundMusic;
+
+// Inventory
+let inventory = {
+  hiveUpgrade: 0,
+  beeStorm: 0,
+  healthPotion: 0,
+  turret: false,
+};
+
+// Costs
+let hiveUpgradeCost = 5000;
+let beeStormCost = 8000;
+let healthPotionCost = 6000;
+let beeStormHint = false;
+let beeStormHintEnd = 0;
+let turretCost = 18000;
+let honeyMultiplierCost = 12000;
+
+// Hive upgrades
+let hiveLevel = 1;
+let honeyMultiplier = 1;
+let honeyMultiplierLevel = 0;
+let maxHoneyMultiplierLevel = 4;
+let cheatCode = "";
+let foxWord = "FOX";
+let foxProgress = "";
+
+// Turret
+
+let turretLevel = 1;
+let maxTurretLevel = 3;
+
+let turretCooldown = 800; // milliseconds
+let lastTurretShot = 0;
+
+let turretAngle = 0;
+
+let bullets = [];
+let healthPotionCount = 0;
+let lastPotionUse = 0;
+let potionCooldown = 10000;
+
+let beehive;
+let beeImage;
+let round = 1;
+let speedLevel = 0;
+let clouds = [];
+let grassBlades = [];
+let bees = [];
+
+let roundComplete = false;
+let roundTarget = 10000;
+
+let bearImage;
+let birdImage;
+let foxImage;
+let birds = [];
+let foxes = [];
+
+const FOX_FRAME_WIDTH = 47;
+const FOX_FRAME_HEIGHT = 44;
+
+let foxSpawnDelay = 12000;
+let nextFoxSpawn;
+
+let nextBirdSpawn;
+let birdWalkSpeed = 4;
+
+let gameStarted = false;
+let gameOver = false;
+let introTimer = 600; // 5 seconds
+let fasterTimer = 0;
+let previousLevel = 0;
+let scoreLevel = 0;
+
+let bearSpawnDelay = 2500;
+let birdSpawnDelay = 3500;
+
+const BIRD_COLS = 8;
+const BIRD_ROWS = 3;
+
+const BIRD_FRAME_WIDTH = 1602.666777 / 8;
+const BIRD_FRAME_HEIGHT = 616 / 3; // 197.33
+let bearX;
+let bearY;
+// Score
+let score = 0;
+let highScore = 0;
+let honey = 0;
+let lastScoreTime = 0;
+let beeStormActive = false;
+let beeStormEndTime = 0;
+let bearFrame = 0;
+let frameTimer = 0;
+let bearLeaving = false;
+let bearGone = false;
+let nextBearSpawn;
+let bearActive = false;
+let bearDirection = 1;
+let bearFacing = 1;
+// Hive health
+let hiveHealth = 100;
+let bearAttacking = false;
+let MAX_HIVE_HEALTH = 100;
+
+let bears = [];
+
+const FRAME_WIDTH = 80; // 320 / 4
+const FRAME_HEIGHT = 48;
+
+function preload() {
+  birdImage = loadImage("assets/images/bird.png");
+  foxImage = loadImage("assets/images/fox_sprite.png");
+  beehive = loadImage("assets/images/beehive.png");
+  beeImage = loadImage("assets/images/happy_bee.png");
+  bearImage = loadImage("assets/images/bear.png");
+
+  bearGrowlSound = loadSound("assets/sounds/bear_growl.wav");
+  buttonClickSound = loadSound("assets/sounds/button_click.wav");
+  birdSquawkSound = loadSound("assets/sounds/bird_squak.wav");
+  hiveDamageSound = loadSound("assets/sounds/hive_damage.wav");
+  beesBuzzingSound = loadSound("assets/sounds/bees_buzzing.wav");
+  turretShotSound = loadSound("assets/sounds/turret_shot.wav");
+  purchaseSound = loadSound("assets/sounds/purchase.wav");
+  declineSound = loadSound("assets/sounds/decline.wav");
+  achievementSound = loadSound("assets/sounds/achievement.wav");
+  backgroundMusic = loadSound("assets/sounds/background_music.mp3");
+}
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  imageMode(CENTER);
+  textFont("Trebuchet MS");
+  backgroundMusic.setVolume(0.25);
+  bearGrowlSound.setVolume(0.6);
+  birdSquawkSound.setVolume(2);
+  turretShotSound.setVolume(0.3); // quieter turret
+  buttonClickSound.setVolume(1);
+  purchaseSound.setVolume(0.7);
+  declineSound.setVolume(0.7);
+  achievementSound.setVolume(0.7);
+  hiveDamageSound.setVolume(0.6);
+  pauseButton.x = width - pauseButton.w - 20;
+  pauseButton.y = 15;
+  bearX = -100; // Start off-screen
+  bearY = height * 0.75 - 20;
+  nextBearSpawn = millis() + random(10000, 20000);
+  nextBirdSpawn = millis() + 30000; // first bird after 30 sec
+  nextFoxSpawn = millis() + 20000;
+  shopButton.y = height - 70;
+
+  // Create grass blades
+  for (let x = 0; x < width; x += 5) {
+    grassBlades.push({
+      x: x,
+      offsetX: random(-4, 4),
+      height: random(8, 20),
+    });
+  }
+
+  // Create clouds
+  for (let i = 0; i < 5; i++) {
+    clouds.push({
+      x: random(width),
+      y: random(160, 300),
+      size: random(60, 120),
+      speed: random(0.5, 1.5),
+    });
+  }
+
+  // Create bees around the hive
+  for (let i = 0; i < 15; i++) {
+    bees.push({
+      x: width / 2 + random(-100, 100),
+      y: height * 0.68 + random(-100, 100),
+
+      targetX: width / 2 + random(-150, 150),
+      targetY: height * 0.68 + random(-150, 150),
+
+      speed: random(0.5, 2),
+      size: random(25, 40),
+    });
+  }
+}
+
+function updateDifficulty() {
+  round = floor(roundTarget / 10000);
+
+  let roundScore = score % 10000;
+  let progress = constrain(roundScore / 10000, 0, 1);
+
+  speedLevel = floor(roundScore / 2500);
+
+  if (speedLevel > previousLevel) {
+    fasterTimer = 120;
+    previousLevel = speedLevel;
+  }
+
+  // ---------- ROUND 1 ----------
+  if (round == 1) {
+    bearSpawnDelay = lerp(3000, 650, progress);
+    birdSpawnDelay = lerp(4000, 900, progress);
+  }
+
+  // ---------- ROUND 2 ----------
+  else if (round == 2) {
+    bearSpawnDelay = lerp(2600, 700, progress);
+    birdSpawnDelay = lerp(3400, 950, progress);
+  }
+
+  // ---------- ROUND 3 ----------
+  else {
+    bearSpawnDelay = lerp(800, 250, progress);
+    birdSpawnDelay = lerp(1200, 450, progress);
+  }
+
+  bearWalkSpeed = 1.7 + progress * 1.2;
+  birdWalkSpeed = 4.2 + progress * 1.2;
+}
+
+function draw() {
+  if (!gameStarted) {
+    background(125, 205, 255);
+
+    // Sun
+    noStroke();
+    fill(255, 220, 80);
+    circle(width - 140, 120, 110);
+
+    // Clouds
+    drawClouds();
+
+    // Ground
+    fill(60, 180, 75);
+    rect(0, height * 0.75, width, height * 0.25);
+
+    // Draw two bees
+    drawStartBees();
+
+    // Main title
+    textAlign(CENTER, CENTER);
+
+    stroke(0);
+    strokeWeight(6);
+    fill(255);
+
+    textSize(62);
+    text("DEFEND THE HIVE", width / 2, 120);
+
+    // Subtitle
+    stroke(0.2);
+    fill(255);
+
+    textSize(24);
+    text("Protect your hive from hungry invaders.", width / 2, 175);
+
+    // Start panel
+    fill(255, 245);
+    stroke(0);
+    strokeWeight(3);
+
+    rect(width / 2 - 260, 230, 520, 170, 20);
+
+    noStroke();
+    fill(40);
+
+    textSize(26);
+    text("Press SPACE to begin your adventure!", width / 2, 275);
+
+    textSize(20);
+
+    text(
+      "Click bears and birds to scare\n" +
+        "them away before they damage\n" +
+        "your beehive.",
+      width / 2,
+      340,
+    );
+
+    return;
+  }
+
+  if (gameOver) {
+    background(25);
+
+    fill(255, 70, 70);
+    textAlign(CENTER, CENTER);
+
+    textSize(72);
+    text("GAME OVER", width / 2, height / 2 - 120);
+
+    fill(255);
+
+    textSize(34);
+    text("Final Score: " + score, width / 2, height / 2 - 30);
+
+    textSize(30);
+    text("High Score: " + highScore, width / 2, height / 2 + 20);
+
+    let bx = width / 2 - 170;
+    let by = height / 2 + 80;
+    let bw = 340;
+    let bh = 65;
+
+    let hovering =
+      mouseX > bx && mouseX < bx + bw && mouseY > by && mouseY < by + bh;
+
+    if (hovering) {
+      fill(255, 220, 70);
+      stroke(255);
+      strokeWeight(4);
+    } else {
+      fill(255, 190, 40);
+      noStroke();
+    }
+
+    rect(bx, by, bw, bh, 16);
+
+    fill(40);
+
+    textSize(26);
+
+    text("Press SPACE to Play Again", width / 2, by + bh / 2);
+
+    return;
+  }
+
+  // Use Bee Storm
+  if (key === "b" || key === "B") {
+    if (inventory.beeStorm > 0 && !beeStormActive) {
+      inventory.beeStorm--;
+      beeStormActive = true;
+      beeStormEndTime = millis() + 5000; // lasts 5 seconds
+    }
+  }
+
+  if (roundComplete) {
+    background(25, 35, 60);
+
+    // Dark overlay
+    fill(0, 170);
+    rect(0, 0, width, height);
+    let panelWidth = width * 0.42;
+    let panelX = width - panelWidth;
+
+    textAlign(CENTER, CENTER);
+
+    fill(255, 210, 0);
+    textSize(70);
+    text("ROUND COMPLETE!", width / 2, height / 2 - 140);
+
+    fill(220);
+    textSize(22);
+
+    if (round == 1) {
+      text(
+        "Round 2 introduces FOXES!\n\n" +
+          "Type FOX to scare them away.\n\n" +
+          "Foxes steal Honey while\n" +
+          "they are at the hive.",
+        width / 2,
+        height / 2 + 20,
+      );
+    } else {
+      text(
+        "Great job!\n\n" +
+          "Each new round gets faster\n" +
+          "and more difficult.\n\n" +
+          "Keep upgrading your hive\n" +
+          "to survive!",
+        width / 2,
+        height / 2 + 20,
+      );
+    }
+
+    fill(255, 190, 40);
+
+    fill(255, 190, 40);
+    noStroke();
+
+    rect(width / 2 - 170, height / 2 + 151, 340, 65, 16);
+
+    fill(40);
+
+    textSize(28);
+
+    text("Press ENTER for Round " + (round + 1), width / 2, height / 2 + 182);
+    return;
+  }
+
+  updateDifficulty();
+  if (paused || shopOpen) {
+    background(135, 206, 235);
+
+    drawHiveHealthBar();
+    drawHoneyUI();
+    drawShopButton();
+    drawRoundProgressBar();
+
+    drawClouds();
+
+    fill(34, 139, 34);
+    noStroke();
+    rect(0, height * 0.75, width, height * 0.25);
+
+    drawGrassTexture();
+    drawBears();
+    drawBirds();
+    drawFoxes();
+
+    image(beehive, width / 2, height * 0.71, 150, 150);
+    drawTurret();
+    // updateBullets();
+    drawMiniHiveHealthBar();
+    drawBees();
+
+    drawTopUI();
+    drawPauseButton();
+
+    if (shopOpen) {
+      drawShop();
+    }
+
+    if (paused && !shopOpen) {
+      fill(80, 80, 80, 170);
+      noStroke();
+      rect(0, 0, width, height);
+
+      fill(255);
+      textAlign(CENTER, CENTER);
+      textSize(80);
+      text("PAUSED", width / 2, height / 2);
+    }
+
+    return;
+  }
+  if (introTimer <= 0 && millis() > nextBearSpawn) {
+    let direction = random() < 0.5 ? 1 : -1;
+
+    bears.push({
+      x: direction === 1 ? -100 : width + 100,
+      y: height * 0.79 - FRAME_HEIGHT,
+
+      direction: direction,
+      facing: direction,
+
+      leaving: false,
+
+      frame: 0,
+      frameTimer: 0,
+
+      lastAttack: 0,
+    });
+
+    nextBearSpawn = millis() + random(bearSpawnDelay * 1, bearSpawnDelay);
+  }
+
+  if (score >= roundTarget) {
+    if (!roundComplete) {
+      achievementSound.play();
+    }
+
+    roundComplete = true;
+    return;
+  }
+
+  if (introTimer <= 0 && millis() > nextBirdSpawn) {
+    birds.push({
+      x: random(0, width),
+      y: -100,
+
+      targetX: width / 2 + random(-120, 120),
+      targetY: height * 0.73,
+
+      direction: 1,
+      facing: random(0, width) < width / 2 ? 1 : -1,
+
+      leaving: false,
+
+      frame: 0,
+      frameTimer: 0,
+
+      lastAttack: 0,
+    });
+
+    let level = floor((millis() - 30000) / 30000);
+
+    nextBirdSpawn = millis() + random(birdSpawnDelay * 1, birdSpawnDelay);
+  }
+
+  if (round >= 2 && introTimer <= 0 && millis() > nextFoxSpawn) {
+    foxes.push({
+      x: -80,
+      y: height * 0.8,
+
+      frame: 0,
+      frameTimer: 0,
+
+      swarmTime: 0,
+      leaving: false,
+
+      lastSteal: millis(),
+    });
+    foxProgress = "";
+
+    nextFoxSpawn = millis() + random(15000, 22000);
+  }
+
+  // Sky
+  background(135, 206, 235);
+
+  updateScore();
+
+  // Clouds
+  drawClouds();
+
+  // Grass
+  fill(34, 139, 34);
+  noStroke();
+  rect(0, height * 0.75, width, height * 0.25);
+
+  // Grass texture
+  drawGrassTexture();
+
+  // Bear
+  drawBears();
+
+  drawBirds();
+  drawFoxes();
+
+  // Beehive
+  image(beehive, width / 2, height * 0.71, 150, 150);
+  drawTurret();
+  updateBullets();
+  updateBeeStorm();
+  drawMiniHiveHealthBar();
+
+  // Bees
+  drawBees();
+
+  // Intro message
+  if (introTimer > 0) {
+    fill(0, 170);
+    noStroke();
+
+    rect(width / 2 - 340, height / 2 - 255, 680, 390, 20);
+
+    fill(255);
+
+    textAlign(CENTER, CENTER);
+
+    textSize(34);
+
+    text("HOW TO PLAY", width / 2, height / 2 - 205);
+
+    textSize(22);
+
+    text(
+      "Protect your hive from bears and birds.\n" +
+        "Click enemies to scare them away.\n" +
+        "Click enemies to earn points.\n" +
+        "Each round makes enemies faster.",
+      width / 2,
+      height / 2 - 70,
+    );
+
+    fill(255, 210, 0);
+
+    textSize(24);
+
+    text("CLICK ENEMIES TO SEND THEM AWAY!", width / 2, height / 2 + 35);
+
+    introTimer--;
+  }
+
+  if (fasterTimer > 0) {
+    textAlign(CENTER, CENTER);
+
+    fill(255, 0, 0);
+    stroke(0);
+    strokeWeight(4);
+
+    textSize(90);
+    fill(255, 0, 0);
+
+    text("FASTER!", width / 2, height / 2);
+    textSize(40);
+    text("Enemies are speeding up", width / 2, height / 2 + 80);
+
+    fasterTimer--;
+  }
+  if (hiveHealth <= 0) {
+    if (score > highScore) {
+      highScore = score;
+    }
+
+    gameOver = true;
+  }
+  drawTopUI();
+  drawHiveHealthBar();
+  drawHoneyUI();
+  drawRoundProgressBar();
+  drawShopButton();
+  drawPauseButton();
+
+  if (shopOpen) {
+    drawShop();
+  }
+
+  if (paused && !shopOpen) {
+    fill(80, 80, 80, 170);
+    noStroke();
+    rect(0, 0, width, height);
+
+    drawTopUI();
+    drawPauseButton();
+
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(80);
+    text("PAUSED", width / 2, height / 2);
+  }
+  if (beeStormHint) {
+    if (millis() > beeStormHintEnd) {
+      beeStormHint = false;
+    } else {
+      fill(0, 180);
+      noStroke();
+      rect(width / 2 - 220, height - 120, 440, 60, 15);
+
+      fill(255);
+      textAlign(CENTER, CENTER);
+      textSize(24);
+      text("🐝 Bee Storm purchased! Press B to use.", width / 2, height - 90);
+    }
+  }
+}
+
+function drawClouds() {
+  fill(255);
+  noStroke();
+
+  for (let cloud of clouds) {
+    // Move left
+    cloud.x -= cloud.speed;
+
+    // Wrap around screen
+    if (cloud.x < -cloud.size * 2) {
+      cloud.x = width + cloud.size;
+      cloud.y = random(160, 300);
+    }
+
+    // Soft round cloud
+    ellipse(cloud.x, cloud.y, cloud.size, cloud.size * 0.6);
+    ellipse(
+      cloud.x - cloud.size * 0.3,
+      cloud.y,
+      cloud.size * 0.7,
+      cloud.size * 0.5,
+    );
+    ellipse(
+      cloud.x + cloud.size * 0.3,
+      cloud.y,
+      cloud.size * 0.7,
+      cloud.size * 0.5,
+    );
+    ellipse(
+      cloud.x,
+      cloud.y - cloud.size * 0.15,
+      cloud.size * 0.8,
+      cloud.size * 0.5,
+    );
+  }
+}
+
+function drawStartBees() {
+  drawBee(170, 140, 1);
+  drawBee(width - 250, 220, 0.8);
+}
+
+function drawBee(x, y, s) {
+  push();
+
+  translate(x, y);
+
+  scale(s);
+
+  stroke(0);
+  strokeWeight(2);
+
+  // wings
+  fill(230);
+
+  ellipse(-10, -12, 18, 28);
+  ellipse(10, -12, 18, 28);
+
+  // body
+  fill(255, 210, 0);
+
+  ellipse(0, 0, 38, 26);
+
+  strokeWeight(3);
+
+  line(-8, -12, -8, 12);
+  line(0, -13, 0, 13);
+  line(8, -12, 8, 12);
+
+  // head
+  fill(0);
+
+  circle(-20, 0, 12);
+
+  // eye
+  fill(255);
+
+  circle(-22, -2, 3);
+
+  pop();
+}
+
+function drawShop() {
+  let panelWidth = width * 0.42;
+  let panelX = width - panelWidth;
+
+  fill(0, 170);
+  rect(0, 0, width, height);
+
+  fill(92, 62, 28);
+  noStroke();
+  rect(panelX, 0, panelWidth, height);
+
+  stroke(70, 45, 20);
+  strokeWeight(2);
+
+  for (let y = 0; y < height; y += 55) {
+    line(panelX, y, panelX + panelWidth, y);
+  }
+
+  noStroke();
+
+  fill(255);
+
+  textAlign(CENTER);
+
+  textSize(36);
+
+  text("HIVE SHOP", panelX + width / 4, 60);
+
+  textSize(18);
+
+  text("Spend Honey to defend your hive.", panelX + width / 4, 95);
+  fill(255, 210, 0);
+  textSize(24);
+  textAlign(CENTER);
+  text("Honey: 🍯 " + floor(honey), panelX + width / 4, 125);
+
+  drawUpgradeCard(
+    panelX + 35,
+    170,
+    "Hive Upgrade",
+    "Increase max health by 20 (Max 200).",
+    hiveUpgradeCost,
+  );
+
+  drawUpgradeCard(
+    panelX + 35,
+    300,
+    "Bee Storm",
+    "Store one Bee Storm for later use.",
+    beeStormCost,
+  );
+
+  drawUpgradeCard(
+    panelX + 35,
+    430,
+    "Health Potion",
+    "Store one full heal.",
+    healthPotionCost,
+  );
+
+  drawUpgradeCard(
+    panelX + 35,
+
+    560,
+
+    "Turret Lv." + turretLevel,
+
+    "Targets nearest enemy automatically.",
+
+    turretCost,
+  );
+
+  drawUpgradeCard(
+    panelX + 35,
+    690,
+    "Honey Multiplier Lv." + (honeyMultiplierLevel + 1),
+    "Increase honey earned from enemies.",
+    honeyMultiplierCost,
+  );
+
+  let closeHover =
+    mouseX > panelX + panelWidth - 65 &&
+    mouseX < panelX + panelWidth - 20 &&
+    mouseY > 20 &&
+    mouseY < 65;
+
+  if (closeHover) {
+    fill(220, 80, 80);
+    stroke(255);
+    strokeWeight(3);
+  } else {
+    fill(165, 55, 55);
+    noStroke();
+  }
+  noStroke();
+
+  let size = closeHover ? 52 : 45;
+
+  rect(panelX + panelWidth - size - 20, 20, size, size, 10);
+
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textSize(24);
+
+  text("X", panelX + panelWidth - size / 2 - 20, 20 + size / 2);
+}
+
+function drawUpgradeCard(x, y, title, desc, cost) {
+  let canBuy = honey >= cost;
+  let hovering =
+    mouseX > x && mouseX < x + 360 && mouseY > y && mouseY < y + 100;
+
+  if (canBuy) {
+    if (hovering) {
+      fill(255, 240, 170);
+    } else {
+      fill(232, 213, 171);
+    }
+  } else {
+    fill(120);
+  }
+
+  let grow = hovering ? 8 : 0;
+
+  if (hovering) {
+    stroke(255);
+    strokeWeight(4);
+  } else {
+    stroke(95, 70, 35);
+    strokeWeight(3);
+  }
+
+  rect(x - grow / 2, y - grow / 2, 360 + grow, 100 + grow, 15);
+
+  noStroke();
+
+  fill(30);
+
+  textAlign(LEFT);
+
+  textSize(22);
+
+  text(title, x + 20, y + 28);
+
+  textSize(15);
+
+  text(desc, x + 20, y + 55);
+
+  textSize(18);
+
+  text("Cost: " + cost + " Honey", x + 20, y + 82);
+}
+
+function drawGrassTexture() {
+  let groundY = height * 0.75;
+
+  stroke(30, 120, 30);
+  strokeWeight(2);
+
+  for (let blade of grassBlades) {
+    let sway = sin(frameCount * 0.05 + blade.x * 0.08) * 5;
+
+    line(
+      blade.x,
+      groundY,
+      blade.x + blade.offsetX + sway,
+      groundY - blade.height,
+    );
+  }
+}
+
+function drawBees() {
+  let hiveX = width / 2;
+  let hiveY = height * 0.71;
+
+  for (let bee of bees) {
+    // Move toward target
+    let dx = bee.targetX - bee.x;
+    let dy = bee.targetY - bee.y;
+
+    let distance = dist(bee.x, bee.y, bee.targetX, bee.targetY);
+
+    if (distance > 1) {
+      bee.x += (dx / distance) * bee.speed;
+      bee.y += (dy / distance) * bee.speed;
+    }
+    // Add buzzing jitter
+    bee.x += random(-0.5, 0.5);
+    bee.y += random(-0.5, 0.5);
+
+    // Pick a new random target near hive
+    if (distance < 15) {
+      bee.targetX = hiveX + random(-150, 150);
+      bee.targetY = hiveY + random(-150, 150);
+    }
+
+    image(beeImage, bee.x, bee.y, bee.size, bee.size);
+  }
+}
+
+function drawRoundProgressBar() {
+  let progress = (score % 10000) / 10000;
+
+  let w = 430;
+  let h = 18;
+
+  let x = width / 2 - w / 2;
+
+  // moved lower
+  let y = 115;
+
+  // Label
+  textAlign(CENTER, CENTER);
+  textSize(17);
+  noStroke();
+  fill(255);
+
+  text(
+    "Round " + round + "   " + floor(progress * 100) + "%",
+    width / 2,
+    y - 18,
+  );
+
+  // Background
+  fill(40, 40, 40, 220);
+  rect(x, y, w, h, 12);
+
+  // Progress
+  fill(255, 195, 40);
+  rect(x, y, w * progress, h, 12);
+
+  // Border
+  noFill();
+  stroke(255);
+  strokeWeight(2);
+  rect(x, y, w, h, 12);
+}
+
+function drawBears() {
+  for (let i = bears.length - 1; i >= 0; i--) {
+    let bear = bears[i];
+    let hiveX = width / 2;
+
+    if (!paused && !shopOpen) {
+      // Animation
+      bear.frameTimer++;
+
+      if (bear.frameTimer > 10) {
+        bear.frame = (bear.frame + 1) % 4;
+        bear.frameTimer = 0;
+      }
+
+      // Walking
+      if (!bear.leaving) {
+        if (bear.direction === 1) {
+          if (bear.x < hiveX - 120) bear.x += bearWalkSpeed;
+        } else {
+          if (bear.x > hiveX + 120) bear.x -= bearWalkSpeed;
+        }
+      }
+
+      // Leaving
+      else {
+        if (bear.direction === 1) bear.x -= bearWalkSpeed * 1.5;
+        else bear.x += bearWalkSpeed * 1.5;
+      }
+
+      // Attack hive
+      let distanceToHive = abs(bear.x - hiveX);
+
+      if (!bear.leaving && distanceToHive <= 120) {
+        if (millis() - bear.lastAttack > 1500) {
+          hiveHealth -= 5;
+          hiveDamageSound.play();
+          hiveHealth = max(0, hiveHealth);
+          bear.lastAttack = millis();
+        }
+      }
+    }
+
+    // Draw sprite
+    push();
+
+    translate(bear.x, bear.y);
+
+    if (bear.facing === -1) scale(-1, 1);
+
+    image(
+      bearImage,
+      0,
+      0,
+      140,
+      90,
+      bear.frame * FRAME_WIDTH,
+      0,
+      FRAME_WIDTH,
+      FRAME_HEIGHT,
+    );
+
+    pop();
+
+    // Remove offscreen
+    if (bear.x < -200 || bear.x > width + 200) {
+      bears.splice(i, 1);
+    }
+  }
+}
+
+function drawBirds() {
+  let hiveX = width / 2;
+
+  for (let i = birds.length - 1; i >= 0; i--) {
+    let bird = birds[i];
+
+    if (!paused && !shopOpen) {
+      // Animate sprite
+      bird.frameTimer++;
+
+      if (bird.frameTimer > 6) {
+        bird.frame = (bird.frame + 1) % 24;
+        bird.frameTimer = 0;
+      }
+
+      // Move toward hive
+      if (!bird.leaving) {
+        let dx = bird.targetX - bird.x;
+        let dy = bird.targetY - bird.y;
+
+        let distance = dist(bird.x, bird.y, bird.targetX, bird.targetY);
+
+        if (distance > 5) {
+          bird.x += (dx / distance) * birdWalkSpeed;
+          bird.y += (dy / distance) * birdWalkSpeed;
+        }
+      }
+
+      // Leaving
+      else {
+        bird.y -= birdWalkSpeed * 1.5;
+
+        if (bird.facing === 1) bird.x += birdWalkSpeed;
+        else bird.x -= birdWalkSpeed;
+      }
+    }
+    // Damage hive
+    let hiveY = height * 0.73;
+
+    let distanceToHive = dist(bird.x, bird.y, hiveX, hiveY);
+
+    if (!bird.leaving && distanceToHive < 100) {
+      if (millis() - bird.lastAttack > 2000) {
+        hiveHealth -= 5;
+        hiveDamageSound.play();
+        hiveHealth = max(0, hiveHealth);
+
+        bird.lastAttack = millis();
+      }
+    }
+    // Always face hive while attacking
+    if (!bird.leaving) {
+      // Face toward hive
+      if (bird.targetX > bird.x) bird.facing = 1;
+      else bird.facing = -1;
+    } else {
+      // Face away from hive
+      if (bird.targetX > bird.x) bird.facing = -1;
+      else bird.facing = 1;
+    }
+    // Draw bird
+    push();
+
+    translate(bird.x, bird.y);
+
+    if (bird.facing === -1) scale(-1, 1);
+
+    let row = floor(bird.frame / 8);
+    let col = bird.frame % 8;
+
+    image(
+      birdImage,
+
+      0,
+      0,
+      120,
+      120,
+
+      col * BIRD_FRAME_WIDTH,
+      row * BIRD_FRAME_HEIGHT,
+
+      BIRD_FRAME_WIDTH,
+      BIRD_FRAME_HEIGHT,
+    );
+
+    pop();
+
+    // Remove offscreen
+    if (bird.x < -200 || bird.x > width + 200) birds.splice(i, 1);
+  }
+}
+
+function drawFoxes() {
+  for (let i = foxes.length - 1; i >= 0; i--) {
+    let fox = foxes[i];
+    if (!paused && !shopOpen) {
+      fox.frameTimer++;
+
+      if (fox.frameTimer > 8) {
+        fox.frame = (fox.frame + 1) % 4;
+        fox.frameTimer = 0;
+      }
+
+      if (!fox.leaving) {
+        let hiveX = width / 2;
+
+        if (fox.x < hiveX - 90) {
+          fox.x += 4.5;
+        }
+        if (!fox.leaving && abs(fox.x - width / 2) < 90) {
+          if (millis() - fox.lastSteal > 2500) {
+            honey = max(0, honey - 1000);
+            fox.lastSteal = millis();
+          }
+        }
+      } else {
+        fox.x -= 7;
+      }
+    }
+    fill(255);
+    textAlign(CENTER);
+    textSize(20);
+    text("TYPE: " + foxWord.substring(foxProgress.length), fox.x, fox.y - 70);
+    image(
+      foxImage,
+      fox.x,
+      fox.y,
+      120,
+      120,
+
+      fox.frame * FOX_FRAME_WIDTH,
+      FOX_FRAME_HEIGHT * 2, // second row = walking left
+
+      FOX_FRAME_WIDTH,
+      FOX_FRAME_HEIGHT,
+    );
+
+    if (fox.x < -150 || fox.x > width + 150) {
+      foxes.splice(i, 1);
+    }
+  }
+}
+
+function drawHoneyUI() {
+  let w = 180;
+  let h = 46;
+
+  let x = 320;
+  let y = 15;
+
+  // Honey coloured box
+  fill(245, 190, 35);
+  stroke(160, 110, 20);
+  strokeWeight(3);
+  rect(x, y, w, h, 12);
+
+  // Text
+  fill(80, 50, 0);
+  textAlign(CENTER, CENTER);
+  textSize(18);
+  text("🍯 " + honey, x + w / 2, y + h / 2);
+}
+
+function drawShopButton() {
+  let w = 160;
+  let h = 48;
+
+  shopButton.x = width - w - 100; // leaves room for pause button
+  shopButton.y = 18;
+  shopButton.w = w;
+  shopButton.h = h;
+
+  let hovering =
+    mouseX > shopButton.x &&
+    mouseX < shopButton.x + w &&
+    mouseY > shopButton.y &&
+    mouseY < shopButton.y + h;
+
+  if (hovering) {
+    stroke(255);
+    strokeWeight(4);
+    fill(230, 170, 60);
+  } else {
+    stroke(255);
+    strokeWeight(2);
+    fill(191, 130, 40);
+  }
+
+  rect(shopButton.x, shopButton.y, w, h, 12);
+
+  noStroke();
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textSize(20);
+
+  text("SHOP", shopButton.x + w / 2, shopButton.y + h / 2);
+}
+
+function mousePressed() {
+  if (shopOpen) {
+    let panelWidth = width * 0.42;
+    let panelX = width - panelWidth;
+
+    if (
+      mouseX > panelX + panelWidth - 65 &&
+      mouseX < panelX + panelWidth - 20 &&
+      mouseY > 20 &&
+      mouseY < 65
+    ) {
+      buttonClickSound.play();
+      shopOpen = false;
+      paused = false;
+      return;
+    }
+  }
+
+  if (
+    mouseX > pauseButton.x &&
+    mouseX < pauseButton.x + pauseButton.w &&
+    mouseY > pauseButton.y &&
+    mouseY < pauseButton.y + pauseButton.h
+  ) {
+    buttonClickSound.play();
+    paused = !paused;
+
+    if (paused) {
+      redraw();
+      noLoop();
+    } else {
+      loop();
+    }
+
+    return;
+  }
+
+  if (
+    mouseX > shopButton.x &&
+    mouseX < shopButton.x + shopButton.w &&
+    mouseY > shopButton.y &&
+    mouseY < shopButton.y + shopButton.h
+  ) {
+    buttonClickSound.play();
+    shopOpen = !shopOpen;
+
+    if (shopOpen) {
+      paused = true;
+      // draw one frame of the shop
+    } else {
+      paused = false;
+      loop();
+    }
+
+    return;
+  }
+
+  // ---------- SHOP PURCHASES ----------
+
+  let panelWidth = width * 0.42;
+  let panelX = width - panelWidth;
+
+  // Hive Upgrade
+  if (
+    shopOpen &&
+    mouseX > panelX + 35 &&
+    mouseX < panelX + 395 &&
+    mouseY > 140 &&
+    mouseY < 240
+  ) {
+    if (honey >= hiveUpgradeCost && MAX_HIVE_HEALTH < 200) {
+      honey -= hiveUpgradeCost;
+      purchaseSound.play();
+      MAX_HIVE_HEALTH += 20;
+
+      hiveHealth += 20;
+      redraw();
+
+      if (hiveHealth > MAX_HIVE_HEALTH) {
+        hiveHealth = MAX_HIVE_HEALTH;
+      }
+
+      hiveUpgradeCost += 5000;
+    } else {
+      declineSound.play();
+    }
+
+    return;
+  }
+
+  // Turret
+  if (
+    shopOpen &&
+    mouseX > panelX + 35 &&
+    mouseX < panelX + 395 &&
+    mouseY > 530 &&
+    mouseY < 630
+  ) {
+    if (!inventory.turret) {
+      if (honey >= turretCost) {
+        honey -= turretCost;
+        purchaseSound.play();
+        inventory.turret = true;
+
+        redraw();
+      }
+    } else if (turretLevel < maxTurretLevel) {
+      if (honey >= turretCost) {
+        honey -= turretCost;
+        purchaseSound.play();
+        turretLevel++;
+
+        redraw();
+
+        if (turretLevel == 2) {
+          turretCooldown = 600;
+        }
+
+        if (turretLevel == 3) {
+          turretCooldown = 400;
+        }
+
+        turretCost += 12000;
+      }
+    }
+
+    return;
+  }
+
+  // Bee Storm
+  if (
+    shopOpen &&
+    mouseX > panelX + 35 &&
+    mouseX < panelX + 395 &&
+    mouseY > 270 &&
+    mouseY < 370
+  ) {
+    if (honey >= beeStormCost) {
+      honey -= beeStormCost;
+      purchaseSound.play();
+
+      inventory.beeStorm++;
+
+      beeStormHint = true;
+      beeStormHintEnd = millis() + 8000; // show for 3 seconds
+
+      redraw();
+    } else {
+      declineSound.play();
+    }
+
+    return;
+  }
+
+  // Health Potion (Full Heal)
+  if (
+    shopOpen &&
+    mouseX > panelX + 35 &&
+    mouseX < panelX + 395 &&
+    mouseY > 400 &&
+    mouseY < 500
+  ) {
+    if (honey >= healthPotionCost && hiveHealth < MAX_HIVE_HEALTH) {
+      honey -= healthPotionCost;
+      purchaseSound.play();
+
+      hiveHealth = MAX_HIVE_HEALTH;
+    } else {
+      declineSound.play();
+    }
+
+    return;
+  }
+
+  // Honey Multiplier
+  if (
+    shopOpen &&
+    mouseX > panelX + 35 &&
+    mouseX < panelX + 395 &&
+    mouseY > 660 &&
+    mouseY < 760
+  ) {
+    if (
+      honey >= honeyMultiplierCost &&
+      honeyMultiplierLevel < maxHoneyMultiplierLevel
+    ) {
+      honey -= honeyMultiplierCost;
+      purchaseSound.play();
+      honeyMultiplierLevel++;
+
+      honeyMultiplier += 0.25;
+
+      redraw();
+
+      honeyMultiplierCost += 8000;
+    } else {
+      declineSound.play();
+    }
+
+    return;
+  }
+
+  // Bears
+  for (let bear of bears) {
+    if (
+      mouseX > bear.x - 70 &&
+      mouseX < bear.x + 70 &&
+      mouseY > bear.y - 45 &&
+      mouseY < bear.y + 45
+    ) {
+      if (!bear.leaving) {
+        bear.leaving = true;
+        bearGrowlSound.play();
+        bear.facing *= -1;
+        score += 100;
+        honey += 100 * honeyMultiplier;
+      }
+    }
+  }
+
+  // Birds
+  for (let bird of birds) {
+    if (
+      mouseX > bird.x - 60 &&
+      mouseX < bird.x + 60 &&
+      mouseY > bird.y - 60 &&
+      mouseY < bird.y + 60
+    ) {
+      if (!bird.leaving) {
+        bird.leaving = true;
+        birdSquawkSound.play();
+        score += 150;
+        honey += 150 * honeyMultiplier;
+
+        if (bird.x < width / 2) bird.facing = -1;
+        else bird.facing = 1;
+      }
+    }
+  }
+}
+
+function updateBeeStorm() {
+  if (!beeStormActive) {
+    beesBuzzingSound.setVolume(2.5); // normal volume
+    return;
+  }
+
+  // Louder buzzing while active
+  beesBuzzingSound.setVolume(5);
+
+  if (millis() > beeStormEndTime) {
+    beeStormActive = false;
+    beesBuzzingSound.setVolume(2.5); // return to normal
+    return;
+  }
+
+  // Kill bears
+  for (let bear of bears) {
+    if (!bear.leaving) {
+      bear.leaving = true;
+      bear.facing *= -1;
+      score += 100;
+      honey += 100 * honeyMultiplier;
+    }
+  }
+
+  // Kill birds
+  for (let bird of birds) {
+    if (!bird.leaving) {
+      bird.leaving = true;
+      score += 150;
+      honey += 150 * honeyMultiplier;
+    }
+  }
+
+  // Visual effect
+  for (let i = 0; i < 80; i++) {
+    fill(255, 220, 0, 180);
+    noStroke();
+    circle(random(width), random(height), random(5, 12));
+  }
+
+  textAlign(CENTER, CENTER);
+  textSize(56);
+  fill(255, 220, 0);
+  stroke(0);
+  strokeWeight(4);
+
+  text("🐝 BEE STORM! 🐝", width / 2, height / 2);
+
+  noStroke();
+}
+
+function drawHiveHealthBar() {
+  let barWidth = 260;
+  let barHeight = 28;
+
+  let x = width / 2 - barWidth / 2;
+  let y = 20;
+
+  // Background
+  fill(40, 40, 40, 180);
+  noStroke();
+  rect(x, y, barWidth, barHeight, 16);
+
+  // Health
+  fill(34, 139, 34);
+  rect(x, y, barWidth * (hiveHealth / MAX_HIVE_HEALTH), barHeight, 16);
+
+  // Border
+  noFill();
+  stroke(255);
+  strokeWeight(2);
+  rect(x, y, barWidth, barHeight, 16);
+
+  // Text
+  noStroke();
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textSize(20);
+  text(
+    "Beehive Health: " + hiveHealth + " / " + MAX_HIVE_HEALTH,
+    width / 2,
+    y + barHeight / 2,
+  );
+}
+
+function drawMiniHiveHealthBar() {
+  let hiveX = width / 2;
+  let hiveY = height * 0.71;
+
+  let barWidth = 80;
+  let barHeight = 10;
+
+  // Background
+  fill(80);
+  rect(hiveX - barWidth / 2, hiveY - 95, barWidth, barHeight);
+
+  // Health
+  fill(0, 200, 0);
+  rect(
+    hiveX - barWidth / 2,
+    hiveY - 95,
+    barWidth * (hiveHealth / MAX_HIVE_HEALTH),
+    barHeight,
+  );
+
+  // Border
+  noFill();
+  stroke(0);
+  rect(hiveX - barWidth / 2, hiveY - 95, barWidth, barHeight);
+
+  noStroke();
+}
+
+function updateScore() {
+  // Score is now earned by clicking enemies.
+}
+
+function drawTopUI() {
+  fill(40, 40, 40, 180);
+  stroke(255);
+  strokeWeight(2);
+
+  // Round box
+  rect(20, 18, 125, 40, 10);
+
+  // Score box
+  rect(155, 18, 145, 40, 10);
+
+  noStroke();
+  fill(255);
+
+  textAlign(CENTER, CENTER);
+  textSize(17);
+
+  text("Round " + round, 20 + 125 / 2, 18 + 40 / 2);
+
+  text("Score " + score, 155 + 145 / 2, 18 + 40 / 2);
+}
+
+function drawPauseButton() {
+  let hovering =
+    mouseX > pauseButton.x &&
+    mouseX < pauseButton.x + pauseButton.w &&
+    mouseY > pauseButton.y &&
+    mouseY < pauseButton.y + pauseButton.h;
+
+  if (hovering) {
+    stroke(255);
+    strokeWeight(4);
+    fill(255, 220, 60);
+  } else {
+    noStroke();
+    fill(255, 180, 0);
+  }
+  rect(pauseButton.x, pauseButton.y, pauseButton.w, pauseButton.h, 12);
+
+  fill(50);
+
+  if (!paused) {
+    // Pause bars
+    rect(pauseButton.x + 20, pauseButton.y + 10, 5, 25, 2);
+    rect(pauseButton.x + 35, pauseButton.y + 10, 5, 25, 2);
+  } else {
+    // Play icon
+    triangle(
+      pauseButton.x + 22,
+      pauseButton.y + 10,
+      pauseButton.x + 22,
+      pauseButton.y + 35,
+      pauseButton.x + 42,
+      pauseButton.y + 22.5,
+    );
+  }
+}
+
+function keyPressed() {
+  if (key.length === 1) {
+    cheatCode += key.toUpperCase();
+
+    // ---------- FOX TYPING ----------
+    if (foxes.length > 0) {
+      let fox = foxes[0];
+
+      if (!fox.leaving) {
+        let typed = key.toUpperCase();
+
+        console.log("Pressed:", typed);
+        console.log("Expected:", foxWord.charAt(foxProgress.length));
+
+        if (typed === foxWord.charAt(foxProgress.length)) {
+          foxProgress += typed;
+
+          if (foxProgress === foxWord) {
+            foxes.splice(0, 1); // remove the fox immediately
+            score += 500;
+            honey += 500 * honeyMultiplier;
+            foxProgress = "";
+          }
+        } else {
+          foxProgress = "";
+        }
+      }
+    }
+
+    if (cheatCode.length > 10) {
+      cheatCode = cheatCode.slice(-10);
+    }
+
+    if (cheatCode.endsWith("HONEY")) {
+      honey = 999999;
+      console.log("Cheat activated!");
+    }
+    if (cheatCode.endsWith("ROUND2")) {
+      score = 10000;
+      round = 2;
+      roundTarget = 20000;
+      roundComplete = false;
+
+      previousLevel = -1;
+      speedLevel = 0;
+
+      bears = [];
+      birds = [];
+      foxes = [];
+
+      nextBearSpawn = millis() + 1000;
+      nextBirdSpawn = millis() + 1500;
+      nextFoxSpawn = millis() + 2000;
+
+      console.log("Round 2 activated!");
+    }
+  }
+  console.log(key, keyCode);
+  if (roundComplete && keyCode === ENTER) {
+    roundComplete = false;
+
+    roundTarget += 10000;
+
+    // Reset "FASTER" checkpoints
+    previousLevel = -1;
+    speedLevel = 0;
+
+    bears = [];
+    birds = [];
+
+    // Small break before enemies return
+    nextBearSpawn = millis() + 2000;
+    nextBirdSpawn = millis() + 3000;
+  }
+
+  // Start game
+  if (!gameStarted && key === " " && !gameOver) {
+    gameStarted = true;
+    introTimer = 600;
+    backgroundMusic.setVolume(0.25);
+    backgroundMusic.loop();
+
+    beesBuzzingSound.setVolume(2.5);
+    beesBuzzingSound.loop();
+  }
+
+  // Restart after game over
+  else if (gameOver && key === " ") {
+    score = 0;
+    honey = 0;
+    hiveHealth = 100;
+
+    bears = [];
+    birds = [];
+
+    gameOver = false;
+
+    scoreLevel = 0;
+    previousLevel = 0;
+    fasterTimer = 0;
+    introTimer = 600;
+
+    nextBearSpawn = millis() + 5000;
+    nextBirdSpawn = millis() + 8000;
+  }
+}
+
+function drawTurret() {
+  if (!inventory.turret) return;
+
+  let tx = width / 2;
+  let ty = height * 0.66;
+
+  let closest = null;
+  let closestDist = 999999;
+
+  // Look through bears
+  for (let bear of bears) {
+    if (bear.leaving) continue;
+
+    let d = dist(tx, ty, bear.x, bear.y);
+
+    if (d < closestDist) {
+      closestDist = d;
+      closest = bear;
+    }
+  }
+
+  // Look through birds
+  for (let bird of birds) {
+    if (bird.leaving) continue;
+
+    let d = dist(tx, ty, bird.x, bird.y);
+
+    if (d < closestDist) {
+      closestDist = d;
+      closest = bird;
+    }
+  }
+
+  // Rotate toward target
+  if (closest != null) {
+    turretAngle = atan2(closest.y - ty, closest.x - tx);
+
+    // Shoot every cooldown
+    if (millis() - lastTurretShot > turretCooldown) {
+      bullets.push({
+        x: tx,
+
+        y: ty,
+
+        angle: turretAngle,
+      });
+      turretShotSound.play();
+
+      lastTurretShot = millis();
+    }
+  }
+
+  // Draw turret
+  push();
+
+  translate(tx, ty);
+  rotate(turretAngle);
+
+  // Base
+  fill(70);
+  circle(0, 0, 28);
+
+  // Barrel
+  fill(40);
+  rect(0, -4, 40, 8, 3);
+
+  pop();
+}
+
+function updateBullets() {
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    let b = bullets[i];
+
+    b.x += cos(b.angle) * 10;
+    b.y += sin(b.angle) * 10;
+
+    fill(255, 220, 0);
+    noStroke();
+    circle(b.x, b.y, 10);
+
+    // Hit bears
+    for (let bear of bears) {
+      if (bear.leaving) continue;
+      if (dist(b.x, b.y, bear.x, bear.y) < 40) {
+        bear.leaving = true;
+        bear.facing *= -1;
+
+        score += 100;
+        honey += 100 * honeyMultiplier;
+
+        bullets.splice(i, 1);
+
+        break;
+      }
+    }
+
+    // Hit birds
+    for (let bird of birds) {
+      if (bird.leaving) continue;
+
+      if (dist(b.x, b.y, bird.x, bird.y) < 40) {
+        bird.leaving = true;
+
+        score += 150;
+        honey += 150 * honeyMultiplier;
+
+        bullets.splice(i, 1);
+
+        break;
+      }
+    }
+
+    // Remove off screen
+    if (b.x < 0 || b.x > width || b.y < 0 || b.y > height) {
+      bullets.splice(i, 1);
+    }
+  }
+}
