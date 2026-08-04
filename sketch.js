@@ -85,6 +85,8 @@ let birdImage;
 let foxImage;
 let birds = [];
 let foxes = [];
+let foxTutorialComplete = false;
+
 
 const FOX_FRAME_WIDTH = 47;
 const FOX_FRAME_HEIGHT = 44;
@@ -384,13 +386,44 @@ function draw() {
 
     if (round == 1) {
       text(
-        "Round 2 introduces FOXES!\n\n" +
-          "Type FOX to scare them away.\n\n" +
-          "Foxes steal Honey while\n" +
-          "they are at the hive.",
+    "Round 2 introduces FOXES!\n\n" +
+    "Practice typing FOX below\n" +
+    "before continuing.",
+    width / 2,
+    height / 2 - 20,
+    );
+
+    // Draw sample fox
+    image(
+        foxImage,
         width / 2,
-        height / 2 + 20,
-      );
+        height / 2 + 90,
+        150,
+        150,
+        0,
+        FOX_FRAME_HEIGHT * 2,
+        FOX_FRAME_WIDTH,
+        FOX_FRAME_HEIGHT
+    );
+
+    textSize(28);
+    fill(255, 210, 0);
+fill(255);
+
+textSize(24);
+text(
+    "Progress: " + foxProgress,
+    width / 2,
+    height / 2 + 165
+);
+
+fill(255, 210, 0);
+textSize(30);
+text(
+    "Remaining: " + foxWord.substring(foxProgress.length),
+    width / 2,
+    height / 2 + 205
+);
     } else {
       text(
         "Great job!\n\n" +
@@ -408,14 +441,18 @@ function draw() {
     fill(255, 190, 40);
     noStroke();
 
-    rect(width / 2 - 170, height / 2 + 151, 340, 65, 16);
+    if (foxTutorialComplete || round > 1) {
+
+    rect(width / 2 - 170, height / 2 + 151, 360, 85, 16);
 
     fill(40);
+    textSize(32);
+    text("Press ENTER for Round " + (round + 1),
+         width / 2 + 5,
+         height / 2 + 192);
 
-    textSize(28);
-
-    text("Press ENTER for Round " + (round + 1), width / 2, height / 2 + 182);
-    return;
+}
+return;
   }
 
   updateDifficulty();
@@ -485,14 +522,19 @@ function draw() {
     nextBearSpawn = millis() + random(bearSpawnDelay * 1, bearSpawnDelay);
   }
 
-  if (score >= roundTarget) {
+if (score >= roundTarget) {
     if (!roundComplete) {
-      achievementSound.play();
+        achievementSound.play();
+
+        if (round == 1) {
+            foxTutorialComplete = false; //FORCE PLAYER TO COMPLETE FOX TUTORIAL
+            foxProgress = "";
+        }
     }
 
     roundComplete = true;
     return;
-  }
+}
 
   if (introTimer <= 0 && millis() > nextBirdSpawn) {
     birds.push({
@@ -1696,6 +1738,23 @@ if (key === "s" || key === "S") {
 
   return;
 }
+if (roundComplete && round === 1 && !foxTutorialComplete) { //TYPING TUTORIAL FOR FOXES
+
+    let typed = key.toUpperCase();
+
+    if (typed === foxWord.charAt(foxProgress.length)) {
+        foxProgress += typed;
+
+        if (foxProgress === foxWord) {
+            foxTutorialComplete = true;
+        }
+    } else {
+        foxProgress = "";
+    }
+
+    return;
+}
+
   if (key.length === 1) {
     cheatCode += key.toUpperCase();
 
@@ -1753,7 +1812,9 @@ if (key === "s" || key === "S") {
     }
   }
   console.log(key, keyCode);
-  if (roundComplete && keyCode === ENTER) {
+  if (roundComplete &&
+    keyCode === ENTER &&
+    (round > 1 || foxTutorialComplete)) {
     roundComplete = false;
 
     roundTarget += 10000;
