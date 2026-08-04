@@ -54,6 +54,14 @@ let cheatCode = "";
 let foxWord = "FOX";
 let foxProgress = "";
 
+//Hornet
+let hornetImage;
+let hornet = null;
+let nextHornetSpawn = 0;
+
+let hornetHits = 0;
+let hornetShake = 0;
+
 // Turret
 
 let turretLevel = 1;
@@ -145,6 +153,7 @@ function preload() {
   beehive = loadImage("assets/images/beehive.png");
   beeImage = loadImage("assets/images/happy_bee.png");
   bearImage = loadImage("assets/images/bear.png");
+  hornetImage = loadImage("assets/images/gianthornet.png");
 
   bearGrowlSound = loadSound("assets/sounds/bear_growl.wav");
   buttonClickSound = loadSound("assets/sounds/button_click.wav");
@@ -178,6 +187,7 @@ function setup() {
   nextBearSpawn = millis() + random(10000, 20000);
   nextBirdSpawn = millis() + 30000; // first bird after 30 sec
   nextFoxSpawn = millis() + 20000;
+  nextHornetSpawn = millis() + 25000;
   shopButton.y = height - 70;
 
   // Create grass blades
@@ -474,6 +484,7 @@ return;
     drawBears();
     drawBirds();
     drawFoxes();
+    drawHornet();
 
     image(beehive, width / 2, height * 0.71, 150, 150);
     drawTurret();
@@ -577,6 +588,27 @@ if (score >= roundTarget) {
 
     nextFoxSpawn = millis() + random(15000, 22000);
   }
+
+// Spawn Hornet (Round 3+)
+if (
+    round >= 3 &&
+    hornet == null &&
+    introTimer <= 0 &&
+    millis() > nextHornetSpawn
+) {
+    hornet = {
+        x: random(100, width - 100),
+        y: -100,
+
+        speed: bearWalkSpeed * 2,
+
+        lastAttack: 0
+    };
+
+    hornetHits = 0;
+
+    nextHornetSpawn = millis() + random(25000, 35000);
+}
 
   // Sky
   background(135, 206, 235);
@@ -1193,6 +1225,72 @@ if (!paused && !shopOpen) {
   }
 }
 
+function drawHornet() {
+
+    if (hornet == null) return;
+
+    if (!paused && !shopOpen) {
+
+        let hiveX = width / 2;
+        let hiveY = height * 0.71;
+
+        let dx = hiveX - hornet.x;
+        let dy = hiveY - hornet.y;
+
+        let d = dist(hornet.x, hornet.y, hiveX, hiveY);
+
+        if (d > 50) {
+            hornet.x += (dx / d) * hornet.speed;
+            hornet.y += (dy / d) * hornet.speed;
+        }
+
+        if (d < 60) {
+
+            if (millis() - hornet.lastAttack > 1500) {
+
+                hiveHealth -= 10;
+
+                hiveDamageSound.play();
+
+                hornet.lastAttack = millis();
+
+                hiveHealth = max(0, hiveHealth);
+
+            }
+        }
+
+        if (hornetShake > 0) {
+            hornetShake--;
+        }
+    }
+
+    push();
+
+    translate(
+        hornet.x + random(-hornetShake, hornetShake),
+        hornet.y
+    );
+
+    let angle = atan2(
+        height * 0.71 - hornet.y,
+        width / 2 - hornet.x
+    );
+
+    rotate(angle + HALF_PI);
+
+    image(hornetImage, 0, 0, 110, 110);
+
+    pop();
+    fill(255);
+textAlign(CENTER);
+textSize(24);
+text(
+    "SPACE x " + (10 - hornetHits),
+    hornet.x,
+    hornet.y - 80
+);
+}
+
 function drawFoxes() {
   for (let i = foxes.length - 1; i >= 0; i--) {
     let fox = foxes[i];
@@ -1782,7 +1880,25 @@ if (roundComplete && round === 1 && !foxTutorialComplete) { //TYPING TUTORIAL FO
         }
       }
     }
+if (hornet != null && key === " ") { //HORNET DAMAGING
 
+    hornetHits++;
+
+    hornet.y -= 12;
+
+    hornetShake = 8;
+
+    if (hornetHits >= 10) {
+
+        score += 700;
+        honey += 700 * honeyMultiplier;
+
+        hornet = null;
+
+    }
+
+    return;
+}
     if (cheatCode.length > 10) {
       cheatCode = cheatCode.slice(-10);
     }
@@ -1825,7 +1941,10 @@ if (roundComplete && round === 1 && !foxTutorialComplete) { //TYPING TUTORIAL FO
 
     bears = [];
     birds = [];
-
+    foxes = [];
+    hornet = null;
+    hornetHits = 0;
+    
     // Small break before enemies return
     nextBearSpawn = millis() + 2000;
     nextBirdSpawn = millis() + 3000;
@@ -1842,14 +1961,18 @@ if (roundComplete && round === 1 && !foxTutorialComplete) { //TYPING TUTORIAL FO
     beesBuzzingSound.loop();
   }
 
-  // Restart after game over
-  else if (gameOver && key === " ") {
+// Restart after game over
+else if (gameOver && key === " ") {
     score = 0;
     honey = 0;
     hiveHealth = 100;
 
     bears = [];
     birds = [];
+    foxes = [];
+
+    hornet = null;
+    hornetHits = 0;
 
     gameOver = false;
 
@@ -1860,7 +1983,9 @@ if (roundComplete && round === 1 && !foxTutorialComplete) { //TYPING TUTORIAL FO
 
     nextBearSpawn = millis() + 5000;
     nextBirdSpawn = millis() + 8000;
-  }
+    nextFoxSpawn = millis() + 8000;
+    nextHornetSpawn = millis() + 25000;
+}
 }
 
 function drawTurret() {
