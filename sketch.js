@@ -187,7 +187,7 @@ function setup() {
   nextBearSpawn = millis() + random(10000, 20000);
   nextBirdSpawn = millis() + 30000; // first bird after 30 sec
   nextFoxSpawn = millis() + 20000;
-  nextHornetSpawn = millis() + 25000;
+  nextHornetSpawn = millis() + random(8000, 14000);
   shopButton.y = height - 70;
 
   // Create grass blades
@@ -434,7 +434,40 @@ text(
     width / 2,
     height / 2 + 205
 );
-    } else {
+    } 
+    else if (round == 2) {
+
+    text(
+        "Round 2 introduces HORNETS!\n\n" +
+        "Practice pressing SPACEBAR 10 times below\n" +
+        "before continuing. Hornets cannot be hit by bee swarms!",
+        width / 2,
+        height / 2 - 20
+    );
+
+    push();
+
+    translate(width / 2, height / 2 + 90);
+
+    if (hornetShake > 0) {
+        translate(random(-hornetShake, hornetShake), 0);
+        hornetShake--;
+    }
+
+    image(hornetImage, 0, 0, 120, 120);
+
+    pop();
+
+    fill(255);
+    textSize(28);
+    text(
+        "SPACE x " + (10 - hornetHits),
+        width / 2,
+        height / 2 + 175
+    );
+}
+    
+    else {
       text(
         "Great job!\n\n" +
           "Each new round gets faster\n" +
@@ -451,7 +484,11 @@ text(
     fill(255, 190, 40);
     noStroke();
 
-    if (foxTutorialComplete || round > 1) {
+if (
+    (round == 1 && foxTutorialComplete) ||
+    (round == 2 && hornetHits >= 10) ||
+    round > 2
+) {
 
     rect(width / 2 - 170, height / 2 + 151, 360, 85, 16);
 
@@ -589,6 +626,7 @@ if (score >= roundTarget) {
     nextFoxSpawn = millis() + random(15000, 22000);
   }
 
+
 // Spawn Hornet (Round 3+)
 if (
     round >= 3 &&
@@ -607,7 +645,7 @@ if (
 
     hornetHits = 0;
 
-    nextHornetSpawn = millis() + random(25000, 35000);
+    nextHornetSpawn = millis() + random(8000, 14000);
 }
 
   // Sky
@@ -631,6 +669,7 @@ if (
 
   drawBirds();
   drawFoxes();
+  drawHornet();
 
   // Beehive
   image(beehive, width / 2, height * 0.71, 150, 150);
@@ -1852,7 +1891,20 @@ if (roundComplete && round === 1 && !foxTutorialComplete) { //TYPING TUTORIAL FO
 
     return;
 }
+if (roundComplete && round === 2 && hornetHits < 10) {
 
+    if (key === " ") {
+
+        hornetHits++;
+        hornetShake = 8;
+
+        if (hornetHits > 10) {
+            hornetHits = 10;
+        }
+    }
+
+    return;
+}
   if (key.length === 1) {
     cheatCode += key.toUpperCase();
 
@@ -1923,6 +1975,7 @@ if (hornet != null && key === " ") { //HORNET DAMAGING
       nextBearSpawn = millis() + 1000;
       nextBirdSpawn = millis() + 1500;
       nextFoxSpawn = millis() + 2000;
+      nextHornetSpawn = millis() + 8000;
 
       console.log("Round 2 activated!");
     }
@@ -1934,6 +1987,11 @@ if (hornet != null && key === " ") { //HORNET DAMAGING
     roundComplete = false;
 
     roundTarget += 10000;
+if (round == 3) {
+    hornetHits = 0;
+    hornetShake = 0;
+}
+
 
     // Reset "FASTER" checkpoints
     previousLevel = -1;
@@ -1944,7 +2002,7 @@ if (hornet != null && key === " ") { //HORNET DAMAGING
     foxes = [];
     hornet = null;
     hornetHits = 0;
-    
+
     // Small break before enemies return
     nextBearSpawn = millis() + 2000;
     nextBirdSpawn = millis() + 3000;
@@ -1984,7 +2042,7 @@ else if (gameOver && key === " ") {
     nextBearSpawn = millis() + 5000;
     nextBirdSpawn = millis() + 8000;
     nextFoxSpawn = millis() + 8000;
-    nextHornetSpawn = millis() + 25000;
+    nextHornetSpawn = millis() + random(8000, 14000);
 }
 }
 
