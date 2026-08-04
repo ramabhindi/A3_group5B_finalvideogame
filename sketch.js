@@ -288,7 +288,7 @@ function draw() {
     stroke(0);
     strokeWeight(3);
 
-    rect(width / 2 - 260, 230, 520, 170, 20);
+    rect(width / 2 - 260, 230, 520, 170, 40);
 
     noStroke();
     fill(40);
@@ -301,7 +301,8 @@ function draw() {
     text(
       "Click bears and birds to scare\n" +
         "them away before they damage\n" +
-        "your beehive.",
+        "your beehive. Press P to pause\n" +
+        "and S to open the shop. Good Luck!",
       width / 2,
       340,
     );
@@ -1091,20 +1092,23 @@ function drawBirds() {
         else bird.x -= birdWalkSpeed;
       }
     }
-    // Damage hive
-    let hiveY = height * 0.73;
+// Damage hive   //FIXED CROW ATTACKING HIVE WHILE IN SHOP OR PAUSED MODE
+if (!paused && !shopOpen) {
 
-    let distanceToHive = dist(bird.x, bird.y, hiveX, hiveY);
+  let hiveY = height * 0.73;
+  let distanceToHive = dist(bird.x, bird.y, hiveX, hiveY);
 
-    if (!bird.leaving && distanceToHive < 100) {
-      if (millis() - bird.lastAttack > 2000) {
-        hiveHealth -= 5;
-        hiveDamageSound.play();
-        hiveHealth = max(0, hiveHealth);
+  if (!bird.leaving && distanceToHive < 100) {
+    if (millis() - bird.lastAttack > 2000) {
+      hiveHealth -= 5;
+      hiveDamageSound.play();
+      hiveHealth = max(0, hiveHealth);
 
-        bird.lastAttack = millis();
-      }
+      bird.lastAttack = millis();
     }
+  }
+
+}
     // Always face hive while attacking
     if (!bird.leaving) {
       // Face toward hive
