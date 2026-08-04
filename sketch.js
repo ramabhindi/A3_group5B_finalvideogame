@@ -95,7 +95,6 @@ let birds = [];
 let foxes = [];
 let foxTutorialComplete = false;
 
-
 const FOX_FRAME_WIDTH = 47;
 const FOX_FRAME_HEIGHT = 44;
 
@@ -306,7 +305,7 @@ function draw() {
     fill(40);
 
     textSize(26);
-    text("Press SPACE to begin your adventure!", width / 2, 275);
+    text("Press SPACE to begin the adventure!", width / 2, 275);
 
     textSize(20);
 
@@ -396,15 +395,15 @@ function draw() {
 
     if (round == 1) {
       text(
-    "Round 2 introduces FOXES!\n\n" +
-    "Practice typing FOX below\n" +
-    "before continuing.",
-    width / 2,
-    height / 2 - 20,
-    );
+        "Round 2 introduces FOXES!\n\n" +
+          "Practice typing FOX below\n" +
+          "before continuing.",
+        width / 2,
+        height / 2 - 20,
+      );
 
-    // Draw sample fox
-    image(
+      // Draw sample fox
+      image(
         foxImage,
         width / 2,
         height / 2 + 90,
@@ -413,61 +412,49 @@ function draw() {
         0,
         FOX_FRAME_HEIGHT * 2,
         FOX_FRAME_WIDTH,
-        FOX_FRAME_HEIGHT
-    );
+        FOX_FRAME_HEIGHT,
+      );
 
-    textSize(28);
-    fill(255, 210, 0);
-fill(255);
+      textSize(28);
+      fill(255, 210, 0);
+      fill(255);
 
-textSize(24);
-text(
-    "Progress: " + foxProgress,
-    width / 2,
-    height / 2 + 165
-);
+      textSize(24);
+      text("Progress: " + foxProgress, width / 2, height / 2 + 165);
 
-fill(255, 210, 0);
-textSize(30);
-text(
-    "Remaining: " + foxWord.substring(foxProgress.length),
-    width / 2,
-    height / 2 + 205
-);
-    } 
-    else if (round == 2) {
-
-    text(
-        "Round 2 introduces HORNETS!\n\n" +
-        "Practice pressing SPACEBAR 10 times below\n" +
-        "before continuing. Hornets cannot be hit by bee swarms!",
+      fill(255, 210, 0);
+      textSize(30);
+      text(
+        "Remaining: " + foxWord.substring(foxProgress.length),
         width / 2,
-        height / 2 - 20
-    );
+        height / 2 + 205,
+      );
+    } else if (round == 2) {
+      text(
+        "Round 2 introduces HORNETS!\n\n" +
+          "Practice pressing SPACEBAR 10 times below\n" +
+          "before continuing. Hornets cannot be hit by bee swarms!",
+        width / 2,
+        height / 2 - 20,
+      );
 
-    push();
+      push();
 
-    translate(width / 2, height / 2 + 90);
+      translate(width / 2, height / 2 + 90);
 
-    if (hornetShake > 0) {
+      if (hornetShake > 0) {
         translate(random(-hornetShake, hornetShake), 0);
         hornetShake--;
-    }
+      }
 
-    image(hornetImage, 0, 0, 120, 120);
+      image(hornetImage, 0, 0, 120, 120);
 
-    pop();
+      pop();
 
-    fill(255);
-    textSize(28);
-    text(
-        "SPACE x " + (10 - hornetHits),
-        width / 2,
-        height / 2 + 175
-    );
-}
-    
-    else {
+      fill(255);
+      textSize(28);
+      text("SPACE x " + (10 - hornetHits), width / 2, height / 2 + 175);
+    } else {
       text(
         "Great job!\n\n" +
           "Each new round gets faster\n" +
@@ -484,22 +471,22 @@ text(
     fill(255, 190, 40);
     noStroke();
 
-if (
-    (round == 1 && foxTutorialComplete) ||
-    (round == 2 && hornetHits >= 10) ||
-    round > 2
-) {
+    if (
+      (round == 1 && foxTutorialComplete) ||
+      (round == 2 && hornetHits >= 10) ||
+      round > 2
+    ) {
+      rect(width / 2 - 170, height / 2 + 151, 360, 85, 16);
 
-    rect(width / 2 - 170, height / 2 + 151, 360, 85, 16);
-
-    fill(40);
-    textSize(32);
-    text("Press ENTER for Round " + (round + 1),
-         width / 2 + 5,
-         height / 2 + 192);
-
-}
-return;
+      fill(40);
+      textSize(32);
+      text(
+        "Press ENTER for Round " + (round + 1),
+        width / 2 + 5,
+        height / 2 + 192,
+      );
+    }
+    return;
   }
 
   updateDifficulty();
@@ -570,19 +557,19 @@ return;
     nextBearSpawn = millis() + random(bearSpawnDelay * 1, bearSpawnDelay);
   }
 
-if (score >= roundTarget) {
+  if (score >= roundTarget) {
     if (!roundComplete) {
-        achievementSound.play();
+      achievementSound.play();
 
-        if (round == 1) {
-            foxTutorialComplete = false; //FORCE PLAYER TO COMPLETE FOX TUTORIAL
-            foxProgress = "";
-        }
+      if (round == 1) {
+        foxTutorialComplete = false; //FORCE PLAYER TO COMPLETE FOX TUTORIAL
+        foxProgress = "";
+      }
     }
 
     roundComplete = true;
     return;
-}
+  }
 
   if (introTimer <= 0 && millis() > nextBirdSpawn) {
     birds.push({
@@ -626,27 +613,26 @@ if (score >= roundTarget) {
     nextFoxSpawn = millis() + random(15000, 22000);
   }
 
-
-// Spawn Hornet (Round 3+)
-if (
+  // Spawn Hornet (Round 3+)
+  if (
     round >= 3 &&
     hornet == null &&
     introTimer <= 0 &&
     millis() > nextHornetSpawn
-) {
+  ) {
     hornet = {
-        x: random(100, width - 100),
-        y: -100,
+      x: random(100, width - 100),
+      y: -100,
 
-        speed: bearWalkSpeed * 2,
+      speed: bearWalkSpeed * 2,
 
-        lastAttack: 0
+      lastAttack: 0,
     };
 
     hornetHits = 0;
 
     nextHornetSpawn = millis() + random(8000, 14000);
-}
+  }
 
   // Sky
   background(135, 206, 235);
@@ -1205,23 +1191,21 @@ function drawBirds() {
         else bird.x -= birdWalkSpeed;
       }
     }
-// Damage hive   //FIXED CROW ATTACKING HIVE WHILE IN SHOP OR PAUSED MODE
-if (!paused && !shopOpen) {
+    // Damage hive   //FIXED CROW ATTACKING HIVE WHILE IN SHOP OR PAUSED MODE
+    if (!paused && !shopOpen) {
+      let hiveY = height * 0.73;
+      let distanceToHive = dist(bird.x, bird.y, hiveX, hiveY);
 
-  let hiveY = height * 0.73;
-  let distanceToHive = dist(bird.x, bird.y, hiveX, hiveY);
+      if (!bird.leaving && distanceToHive < 100) {
+        if (millis() - bird.lastAttack > 2000) {
+          hiveHealth -= 5;
+          hiveDamageSound.play();
+          hiveHealth = max(0, hiveHealth);
 
-  if (!bird.leaving && distanceToHive < 100) {
-    if (millis() - bird.lastAttack > 2000) {
-      hiveHealth -= 5;
-      hiveDamageSound.play();
-      hiveHealth = max(0, hiveHealth);
-
-      bird.lastAttack = millis();
+          bird.lastAttack = millis();
+        }
+      }
     }
-  }
-
-}
     // Always face hive while attacking
     if (!bird.leaving) {
       // Face toward hive
@@ -1265,69 +1249,54 @@ if (!paused && !shopOpen) {
 }
 
 function drawHornet() {
+  if (hornet == null) return;
 
-    if (hornet == null) return;
+  if (!paused && !shopOpen) {
+    let hiveX = width / 2;
+    let hiveY = height * 0.71;
 
-    if (!paused && !shopOpen) {
+    let dx = hiveX - hornet.x;
+    let dy = hiveY - hornet.y;
 
-        let hiveX = width / 2;
-        let hiveY = height * 0.71;
+    let d = dist(hornet.x, hornet.y, hiveX, hiveY);
 
-        let dx = hiveX - hornet.x;
-        let dy = hiveY - hornet.y;
-
-        let d = dist(hornet.x, hornet.y, hiveX, hiveY);
-
-        if (d > 50) {
-            hornet.x += (dx / d) * hornet.speed;
-            hornet.y += (dy / d) * hornet.speed;
-        }
-
-        if (d < 60) {
-
-            if (millis() - hornet.lastAttack > 1500) {
-
-                hiveHealth -= 10;
-
-                hiveDamageSound.play();
-
-                hornet.lastAttack = millis();
-
-                hiveHealth = max(0, hiveHealth);
-
-            }
-        }
-
-        if (hornetShake > 0) {
-            hornetShake--;
-        }
+    if (d > 50) {
+      hornet.x += (dx / d) * hornet.speed;
+      hornet.y += (dy / d) * hornet.speed;
     }
 
-    push();
+    if (d < 60) {
+      if (millis() - hornet.lastAttack > 1500) {
+        hiveHealth -= 10;
 
-    translate(
-        hornet.x + random(-hornetShake, hornetShake),
-        hornet.y
-    );
+        hiveDamageSound.play();
 
-    let angle = atan2(
-        height * 0.71 - hornet.y,
-        width / 2 - hornet.x
-    );
+        hornet.lastAttack = millis();
 
-    rotate(angle + HALF_PI);
+        hiveHealth = max(0, hiveHealth);
+      }
+    }
 
-    image(hornetImage, 0, 0, 110, 110);
+    if (hornetShake > 0) {
+      hornetShake--;
+    }
+  }
 
-    pop();
-    fill(255);
-textAlign(CENTER);
-textSize(24);
-text(
-    "SPACE x " + (10 - hornetHits),
-    hornet.x,
-    hornet.y - 80
-);
+  push();
+
+  translate(hornet.x + random(-hornetShake, hornetShake), hornet.y);
+
+  let angle = atan2(height * 0.71 - hornet.y, width / 2 - hornet.x);
+
+  rotate(angle + HALF_PI);
+
+  image(hornetImage, 0, 0, 110, 110);
+
+  pop();
+  fill(255);
+  textAlign(CENTER);
+  textSize(24);
+  text("SPACE x " + (10 - hornetHits), hornet.x, hornet.y - 80);
 }
 
 function drawFoxes() {
@@ -1855,56 +1824,55 @@ function drawPauseButton() {
 
 function keyPressed() {
   // Pause with P
-if (key === "p" || key === "P") {
-  paused = !paused;
+  if (key === "p" || key === "P") {
+    paused = !paused;
 
-  // Close the shop if manually pausing
-  if (paused) {
-    shopOpen = false;
+    // Close the shop if manually pausing
+    if (paused) {
+      shopOpen = false;
+    }
+
+    return;
   }
 
-  return;
-}
+  // Shop with S
+  if (key === "s" || key === "S") {
+    shopOpen = !shopOpen;
 
-// Shop with S
-if (key === "s" || key === "S") {
-  shopOpen = !shopOpen;
+    // Opening the shop pauses the game
+    paused = shopOpen;
 
-  // Opening the shop pauses the game
-  paused = shopOpen;
-
-  return;
-}
-if (roundComplete && round === 1 && !foxTutorialComplete) { //TYPING TUTORIAL FOR FOXES
+    return;
+  }
+  if (roundComplete && round === 1 && !foxTutorialComplete) {
+    //TYPING TUTORIAL FOR FOXES
 
     let typed = key.toUpperCase();
 
     if (typed === foxWord.charAt(foxProgress.length)) {
-        foxProgress += typed;
+      foxProgress += typed;
 
-        if (foxProgress === foxWord) {
-            foxTutorialComplete = true;
-        }
+      if (foxProgress === foxWord) {
+        foxTutorialComplete = true;
+      }
     } else {
-        foxProgress = "";
+      foxProgress = "";
     }
 
     return;
-}
-if (roundComplete && round === 2 && hornetHits < 10) {
-
+  }
+  if (roundComplete && round === 2 && hornetHits < 10) {
     if (key === " ") {
+      hornetHits++;
+      hornetShake = 8;
 
-        hornetHits++;
-        hornetShake = 8;
-
-        if (hornetHits > 10) {
-            hornetHits = 10;
-        }
+      if (hornetHits > 10) {
+        hornetHits = 10;
+      }
     }
 
     return;
-}
+  }
   if (key.length === 1) {
     cheatCode += key.toUpperCase();
 
@@ -1932,25 +1900,24 @@ if (roundComplete && round === 2 && hornetHits < 10) {
         }
       }
     }
-if (hornet != null && key === " ") { //HORNET DAMAGING
+    if (hornet != null && key === " ") {
+      //HORNET DAMAGING
 
-    hornetHits++;
+      hornetHits++;
 
-    hornet.y -= 12;
+      hornet.y -= 12;
 
-    hornetShake = 8;
+      hornetShake = 8;
 
-    if (hornetHits >= 10) {
-
+      if (hornetHits >= 10) {
         score += 700;
         honey += 700 * honeyMultiplier;
 
         hornet = null;
+      }
 
+      return;
     }
-
-    return;
-}
     if (cheatCode.length > 10) {
       cheatCode = cheatCode.slice(-10);
     }
@@ -1981,17 +1948,18 @@ if (hornet != null && key === " ") { //HORNET DAMAGING
     }
   }
   console.log(key, keyCode);
-  if (roundComplete &&
+  if (
+    roundComplete &&
     keyCode === ENTER &&
-    (round > 1 || foxTutorialComplete)) {
+    (round > 1 || foxTutorialComplete)
+  ) {
     roundComplete = false;
 
     roundTarget += 10000;
-if (round == 3) {
-    hornetHits = 0;
-    hornetShake = 0;
-}
-
+    if (round == 3) {
+      hornetHits = 0;
+      hornetShake = 0;
+    }
 
     // Reset "FASTER" checkpoints
     previousLevel = -1;
@@ -2019,8 +1987,8 @@ if (round == 3) {
     beesBuzzingSound.loop();
   }
 
-// Restart after game over
-else if (gameOver && key === " ") {
+  // Restart after game over
+  else if (gameOver && key === " ") {
     score = 0;
     honey = 0;
     hiveHealth = 100;
@@ -2043,7 +2011,7 @@ else if (gameOver && key === " ") {
     nextBirdSpawn = millis() + 8000;
     nextFoxSpawn = millis() + 8000;
     nextHornetSpawn = millis() + random(8000, 14000);
-}
+  }
 }
 
 function drawTurret() {
