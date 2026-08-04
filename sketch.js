@@ -1671,6 +1671,27 @@ function drawPauseButton() {
 }
 
 function keyPressed() {
+  // Pause with P
+if (key === "p" || key === "P") {
+  paused = !paused;
+
+  // Close the shop if manually pausing
+  if (paused) {
+    shopOpen = false;
+  }
+
+  return;
+}
+
+// Shop with S
+if (key === "s" || key === "S") {
+  shopOpen = !shopOpen;
+
+  // Opening the shop pauses the game
+  paused = shopOpen;
+
+  return;
+}
   if (key.length === 1) {
     cheatCode += key.toUpperCase();
 
