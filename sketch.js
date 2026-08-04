@@ -38,7 +38,7 @@ let inventory = {
 
 // Costs
 let hiveUpgradeCost = 5000;
-let beeStormCost = 8000;
+let beeStormCost = 20000;
 let healthPotionCost = 6000;
 let beeStormHint = false;
 let beeStormHintEnd = 0;
