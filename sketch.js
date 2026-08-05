@@ -20,13 +20,17 @@ let shopButton = {
 let bearGrowlSound;
 let buttonClickSound;
 let birdSquawkSound;
+let foxSound;
+let hornetSound;
 let hiveDamageSound;
 let beesBuzzingSound;
 let turretShotSound;
 let purchaseSound;
 let declineSound;
 let achievementSound;
-let backgroundMusic;
+let backgroundMusic1;
+let backgroundMusic2;
+let backgroundMusic3;
 
 // Inventory
 let inventory = {
@@ -157,23 +161,31 @@ function preload() {
   bearGrowlSound = loadSound("assets/sounds/bear_growl.wav");
   buttonClickSound = loadSound("assets/sounds/button_click.wav");
   birdSquawkSound = loadSound("assets/sounds/bird_squak.wav");
+  foxSound = loadSound("assets/sounds/fox_sound.wav");
+  hornetSound = loadSound("assets/sounds/hornet_sound.wav");
   hiveDamageSound = loadSound("assets/sounds/hive_damage.wav");
   beesBuzzingSound = loadSound("assets/sounds/bees_buzzing.wav");
   turretShotSound = loadSound("assets/sounds/turret_shot.wav");
   purchaseSound = loadSound("assets/sounds/purchase.wav");
   declineSound = loadSound("assets/sounds/decline.wav");
   achievementSound = loadSound("assets/sounds/achievement.wav");
-  backgroundMusic = loadSound("assets/sounds/background_music.mp3");
+  backgroundMusic1 = loadSound("assets/sounds/background_music.mp3");
+  backgroundMusic2 = loadSound("assets/sounds/round2.mp3");
+  backgroundMusic3 = loadSound("assets/sounds/round3.mp3");
 }
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   imageMode(CENTER);
   textFont("Trebuchet MS");
-  backgroundMusic.setVolume(0.25);
+  backgroundMusic1.setVolume(0.25);
+  backgroundMusic2.setVolume(0.5);
+  backgroundMusic3.setVolume(0.25);
   bearGrowlSound.setVolume(0.6);
   birdSquawkSound.setVolume(2);
-  turretShotSound.setVolume(0.3); // quieter turret
+  foxSound.setVolume(0.6);
+  hornetSound.setVolume(0.6);
+  turretShotSound.setVolume(0.11); // quieter turret
   buttonClickSound.setVolume(1);
   purchaseSound.setVolume(0.7);
   declineSound.setVolume(0.7);
@@ -224,9 +236,7 @@ function setup() {
 }
 
 function updateDifficulty() {
-  round = floor(roundTarget / 10000);
-
-  let roundScore = score % 10000;
+  let roundScore = score - (round - 1) * 10000;
   let progress = constrain(roundScore / 10000, 0, 1);
 
   speedLevel = floor(roundScore / 2500);
@@ -431,7 +441,7 @@ function draw() {
       );
     } else if (round == 2) {
       text(
-        "Round 2 introduces HORNETS!\n\n" +
+        "Round 3 introduces HORNETS!\n\n" +
           "Practice pressing SPACEBAR 10 times below\n" +
           "before continuing. Hornets cannot be hit by bee swarms!",
         width / 2,
@@ -635,7 +645,15 @@ function draw() {
   }
 
   // Sky
-  background(135, 206, 235);
+  if (round == 1) {
+    background(135, 206, 235); // blue daytime
+  } else if (round == 2) {
+    background(255, 170, 80); // orange sunset
+  } else if (round == 3) {
+    background(35, 40, 90); // dark night
+  } else {
+    background(135, 206, 235); // back to blue from Round 4+
+  }
 
   updateScore();
 
@@ -643,7 +661,15 @@ function draw() {
   drawClouds();
 
   // Grass
-  fill(34, 139, 34);
+  if (round == 1) {
+    fill(34, 139, 34);
+  } else if (round == 2) {
+    fill(70, 120, 40);
+  } else if (round == 3) {
+    fill(20, 80, 20);
+  } else {
+    fill(34, 139, 34);
+  }
   noStroke();
   rect(0, height * 0.75, width, height * 0.25);
 
@@ -1062,7 +1088,7 @@ function drawRoundProgressBar() {
   textAlign(CENTER, CENTER);
   textSize(17);
   noStroke();
-  fill(255);
+  fill(0);
 
   text(
     "Round " + round + "   " + floor(progress * 100) + "%",
@@ -1890,6 +1916,7 @@ function keyPressed() {
           foxProgress += typed;
 
           if (foxProgress === foxWord) {
+            foxSound.play();
             foxes.splice(0, 1); // remove the fox immediately
             score += 500;
             honey += 500 * honeyMultiplier;
@@ -1910,6 +1937,7 @@ function keyPressed() {
       hornetShake = 8;
 
       if (hornetHits >= 10) {
+        hornetSound.play();
         score += 700;
         honey += 700 * honeyMultiplier;
 
@@ -1956,6 +1984,8 @@ function keyPressed() {
     roundComplete = false;
 
     roundTarget += 10000;
+    round++;
+    playRoundMusic();
     if (round == 3) {
       hornetHits = 0;
       hornetShake = 0;
@@ -1979,9 +2009,8 @@ function keyPressed() {
   // Start game
   if (!gameStarted && key === " " && !gameOver) {
     gameStarted = true;
-    introTimer = 600;
-    backgroundMusic.setVolume(0.25);
-    backgroundMusic.loop();
+    introTimer = 300;
+    playRoundMusic();
 
     beesBuzzingSound.setVolume(2.5);
     beesBuzzingSound.loop();
@@ -1996,9 +2025,25 @@ function keyPressed() {
     bears = [];
     birds = [];
     foxes = [];
+    bullets = [];
 
     hornet = null;
     hornetHits = 0;
+
+    //Reset Inventory
+    inventory = {
+      hiveUpgrade: 0,
+      beeStorm: 0,
+      healthPotion: 0,
+      turret: false,
+    };
+
+    //Reset turret
+    turretLevel = 1;
+    turretCooldown = 800;
+    turretAngle = 0;
+    lastTurretShot = 0;
+    turretCost = 18000;
 
     gameOver = false;
 
@@ -2011,6 +2056,23 @@ function keyPressed() {
     nextBirdSpawn = millis() + 8000;
     nextFoxSpawn = millis() + 8000;
     nextHornetSpawn = millis() + random(8000, 14000);
+  }
+}
+
+function playRoundMusic() {
+  backgroundMusic1.stop();
+  backgroundMusic2.stop();
+  backgroundMusic3.stop();
+
+  if (round === 1) {
+    backgroundMusic1.loop();
+  } else if (round === 2) {
+    backgroundMusic2.loop();
+  } else if (round === 3) {
+    backgroundMusic3.loop();
+  } else {
+    // Round 4+
+    backgroundMusic1.loop();
   }
 }
 
@@ -2101,6 +2163,8 @@ function updateBullets() {
         bear.leaving = true;
         bear.facing *= -1;
 
+        bearGrowlSound.play();
+
         score += 100;
         honey += 100 * honeyMultiplier;
 
@@ -2116,6 +2180,8 @@ function updateBullets() {
 
       if (dist(b.x, b.y, bird.x, bird.y) < 40) {
         bird.leaving = true;
+
+        birdSquawkSound.play();
 
         score += 150;
         honey += 150 * honeyMultiplier;
